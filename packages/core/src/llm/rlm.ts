@@ -279,7 +279,10 @@ export class RetryLanguageModel {
           apiKey: apiKey,
           baseURL: baseURL,
           fetch: llm.fetch,
-          headers: llm.config?.headers
+          headers: {
+            "anthropic-dangerous-direct-browser-access": "true",
+            ...llm.config?.headers
+          }
         }).languageModel(llm.model);
 
       case "@ai-sdk/google":
