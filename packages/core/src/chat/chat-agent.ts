@@ -26,6 +26,7 @@ import DeepActionTool from "./tools/deep-action";
 import { getChatSystemPrompt } from "../prompt/chat";
 import { mergeTools, uuidv4 } from "../common/utils";
 import TaskVariableStorageTool from "./tools/variable-storage";
+import OpenSurferTool from "./tools/opensurfer";
 import { convertTools, getTool, convertToolResult } from "../agent/agent-llm";
 
 export class ChatAgent {
@@ -209,9 +210,7 @@ export class ChatAgent {
       tools.push(new WebSearchTool(this.chatContext, params));
     }
     tools.push(new TaskVariableStorageTool(this.chatContext, params));
-    // this.chatContext.getConfig().agents?.forEach((agent) => {
-    //   tools.push(new AgentWrapTool(this.chatContext, params, agent));
-    // });
+    tools.push(new OpenSurferTool(this.chatContext, params));
     return tools;
   }
 

@@ -7,6 +7,7 @@ import { TOOL_NAME as webpage_qa } from "../chat/tools/webpage-qa";
 import { TOOL_NAME as web_search } from "../chat/tools/web-search";
 import { TOOL_NAME as deep_action } from "../chat/tools/deep-action";
 import { TOOL_NAME as variable_storage } from "../chat/tools/variable-storage";
+import { TOOL_NAME as opensurfer_automation } from "../chat/tools/opensurfer";
 
 const CHAT_SYSTEM_TEMPLATE = `
 You are {{name}}, it is an action-oriented assistant in the browser, a general-purpose intelligent agent running in the browser environment.
@@ -29,6 +30,9 @@ For non-chat related tasks issued by users, the following tools need to be calle
 </if>
 <if ${variable_storage}Tool>
 - ${variable_storage}: This tool is used to read output variables from task nodes and write input variables to task nodes, mainly used to retrieve variable results after task execution is completed.
+</if>
+<if ${opensurfer_automation}Tool>
+- ${opensurfer_automation}: IMPORTANT — when the user asks to set up a recurring automation, background workflow, or trigger (e.g. "every time X happens, do Y", "whenever a PR opens...", "monitor X and create Y"), use this tool instead of deepAction. This tool creates a persistent background automation via the OpenSurfer server that runs headlessly without any browser UI interaction. The user can manage saved automations in the Workflows tab.
 </if>
 </tool_instructions>
 
