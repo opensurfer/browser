@@ -2,7 +2,7 @@
 
 A Chromium-based browser that learns what software can do by watching you use it — then lets AI operate any app you've connected, compose cross-app workflows, and chat with full awareness of your software stack.
 
-Built on [OpenBrowser](https://github.com/OpenBrowserAI/openbrowser).
+Built on [OpenBrowser](https://github.com/OpenBrowserAI/openbrowser). Automations powered by [opensurfer](https://github.com/opensurfer/opensurfer).
 
 ---
 
@@ -28,6 +28,7 @@ OpenSurfer Browser
 ```
 
 The **OpenSurfer Runtime** (`packages/opensurfer-runtime`) is the capability engine:
+
 - Connects to the local [opensurfer](https://github.com/opensurfer/opensurfer) server
 - Discovers what every connected app can do (no API docs, no connectors)
 - Composes multi-step workflows across apps in natural language
@@ -39,12 +40,12 @@ The **chat tab** uses OpenBrowser's existing AI infrastructure (`packages/core`)
 
 ## Packages
 
-| package | description |
-|---|---|
-| `packages/core` | OpenBrowser AI layer — LLM providers, agents, chat, memory |
-| `packages/extension` | Shared browser utilities |
+| package                       | description                                                     |
+| ----------------------------- | --------------------------------------------------------------- |
+| `packages/core`               | OpenBrowser AI layer — LLM providers, agents, chat, memory      |
+| `packages/extension`          | Shared browser utilities                                        |
 | `packages/opensurfer-runtime` | OpenSurfer capability client — discovery, resolve, compose, run |
-| `chromium-extension` | React sidebar — Chat + Capabilities tabs |
+| `chromium-extension`          | React sidebar — Chat + Capabilities tabs                        |
 
 ---
 
