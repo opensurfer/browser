@@ -98,6 +98,7 @@ export default class OpenSurferTool implements DialogueTool {
           ? { type: "webhook" }
           : {
               type: "poll",
+              pollRequest: plan.poll || undefined,
               system:
                 (args.pollSystem as string) ||
                 plan.trigger?.system ||
@@ -131,9 +132,12 @@ export default class OpenSurferTool implements DialogueTool {
       }
 
       const saved = await createRes.json();
+      const pollDesc = trigger.pollRequest
+        ? (trigger.pollRequest as Record<string, string>).url
+        : `${trigger.system}/${trigger.capability}`;
       const summary =
         triggerType === "poll"
-          ? `Polling ${trigger.system}/${trigger.capability} every ${pollInterval}s`
+          ? `Polling ${pollDesc} every ${pollInterval}s`
           : `Webhook trigger (POST to /api/webhooks/${saved.id})`;
 
       return {
