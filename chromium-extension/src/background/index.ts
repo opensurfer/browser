@@ -449,7 +449,7 @@ async function proxyViaTab(
 
   const injected = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
-    world: "MAIN",
+    world: "ISOLATED",
     func: async (r: {
       url: string;
       method: string;
@@ -457,6 +457,7 @@ async function proxyViaTab(
       body: any;
     }) => {
       try {
+        const bodyLen = typeof r.body === "string" ? r.body.length : 0;
         const resp = await fetch(r.url, {
           method: r.method,
           headers: r.headers,
@@ -470,7 +471,12 @@ async function proxyViaTab(
         } catch {
           parsed = text.slice(0, 4000);
         }
-        return { status: resp.status, ok: resp.ok, body: parsed };
+        return {
+          status: resp.status,
+          ok: resp.ok,
+          body: parsed,
+          _sentBodyLen: bodyLen
+        };
       } catch (e: any) {
         return { status: 0, ok: false, error: String(e?.message ?? e) };
       }
@@ -500,16 +506,27 @@ async function sessionBridgeTick(): Promise<boolean> {
   };
 
   let result: any = null;
+  let via = "none";
+
+  console.log(
+    "[sessionBridge] job",
+    id,
+    method,
+    url,
+    "bodyLen=" + (body ? body.length : 0)
+  );
 
   // First try executing inside a real tab of the target's parent domain — this
   // gives natural origin/referer/cookies. Falls back to direct fetch if no tab.
   try {
     result = await proxyViaTab(url, method, mergedHeaders, body);
+    if (result) via = "tab";
   } catch (e: any) {
     console.warn("[sessionBridge] proxyViaTab failed:", e?.message);
   }
 
   if (!result) {
+    via = "direct";
     // Fallback: direct fetch from the service worker
     try {
       const response = await fetch(url, {
@@ -530,6 +547,8 @@ async function sessionBridgeTick(): Promise<boolean> {
       result = { status: 0, ok: false, error: e.message };
     }
   }
+  result._via = via;
+  console.log("[sessionBridge] result via", via, "status", result.status);
 
   try {
     await fetch(`http://localhost:4173/api/session-result/${id}`, {
