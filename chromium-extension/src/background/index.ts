@@ -396,7 +396,90 @@ async function handleOsTrace(_requestId: string, data: any): Promise<void> {
 
 // ── session bridge ────────────────────────────────────────────────────────────
 // Polls the opensurfer server for queued capability runs, executes them in the
-// extension's context (which carries the user's cookies/auth), returns results.
+// extension's context (carrying the user's cookies/auth) or inside a tab of
+// the target's parent domain (so origin/referer are naturally correct).
+
+// Map API host → the app host(s) whose tab we should proxy through.
+// Empty string ⇒ use the host itself.
+function deriveOriginCandidates(hostname: string): string[] {
+  // Strip common API subdomains (api, client-api, edgeapi, etc.) to find the app host
+  const stripped = hostname.replace(
+    /^(client-api|edgeapi|edge-api|api|graphql|ws|www)\./,
+    ""
+  );
+  const parts = stripped.split(".");
+  const parent = parts.length >= 2 ? parts.slice(-2).join(".") : stripped;
+  const candidates = new Set<string>([
+    hostname,
+    stripped,
+    parent,
+    `www.${parent}`,
+    `app.${parent}`
+  ]);
+  return [...candidates];
+}
+
+// Execute the fetch inside a real tab's page context so origin/referer/cookies
+// look identical to what the app itself would send. Returns null if no tab is
+// available on any candidate host.
+async function proxyViaTab(
+  url: string,
+  method: string,
+  headers: Record<string, string>,
+  body: any
+): Promise<any | null> {
+  let hostname: string;
+  try {
+    hostname = new URL(url).hostname;
+  } catch {
+    return null;
+  }
+  const candidates = deriveOriginCandidates(hostname);
+  const patterns = candidates.map((h) => `https://${h}/*`);
+  let tabs: chrome.tabs.Tab[] = [];
+  try {
+    tabs = await chrome.tabs.query({ url: patterns });
+  } catch {
+    return null;
+  }
+  if (tabs.length === 0) return null;
+  // Prefer an active tab if one matches, else first
+  const tab = tabs.find((t) => t.active) || tabs[0];
+  if (!tab.id) return null;
+
+  const injected = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    world: "MAIN",
+    func: async (r: {
+      url: string;
+      method: string;
+      headers: Record<string, string>;
+      body: any;
+    }) => {
+      try {
+        const resp = await fetch(r.url, {
+          method: r.method,
+          headers: r.headers,
+          body: r.body ?? undefined,
+          credentials: "include"
+        });
+        const text = await resp.text();
+        let parsed: any;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          parsed = text.slice(0, 4000);
+        }
+        return { status: resp.status, ok: resp.ok, body: parsed };
+      } catch (e: any) {
+        return { status: 0, ok: false, error: String(e?.message ?? e) };
+      }
+    },
+    args: [{ url, method, headers, body }]
+  });
+  return injected?.[0]?.result ?? null;
+}
+
 async function sessionBridgeTick(): Promise<boolean> {
   let job: any;
   try {
@@ -411,35 +494,41 @@ async function sessionBridgeTick(): Promise<boolean> {
   const req = job.req ?? {};
   const { method = "GET", url, headers = {}, body } = req;
 
-  // Linear (client-api.linear.app) needs referer/origin from the Linear app
-  const extraHeaders: Record<string, string> = {};
-  if (typeof url === "string" && url.includes("client-api.linear.app")) {
-    extraHeaders["referer"] = "https://linear.app/";
-    extraHeaders["origin"] = "https://linear.app";
+  const mergedHeaders: Record<string, string> = {
+    "content-type": "application/json",
+    ...headers
+  };
+
+  let result: any = null;
+
+  // First try executing inside a real tab of the target's parent domain — this
+  // gives natural origin/referer/cookies. Falls back to direct fetch if no tab.
+  try {
+    result = await proxyViaTab(url, method, mergedHeaders, body);
+  } catch (e: any) {
+    console.warn("[sessionBridge] proxyViaTab failed:", e?.message);
   }
 
-  let result: any;
-  try {
-    const response = await fetch(url, {
-      method,
-      headers: {
-        "content-type": "application/json",
-        ...headers,
-        ...extraHeaders
-      },
-      body: body ?? undefined,
-      credentials: "include"
-    });
-    const text = await response.text();
-    let parsed: any;
+  if (!result) {
+    // Fallback: direct fetch from the service worker
     try {
-      parsed = JSON.parse(text);
-    } catch {
-      parsed = text.slice(0, 4000);
+      const response = await fetch(url, {
+        method,
+        headers: mergedHeaders,
+        body: body ?? undefined,
+        credentials: "include"
+      });
+      const text = await response.text();
+      let parsed: any;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        parsed = text.slice(0, 4000);
+      }
+      result = { status: response.status, ok: response.ok, body: parsed };
+    } catch (e: any) {
+      result = { status: 0, ok: false, error: e.message };
     }
-    result = { status: response.status, ok: response.ok, body: parsed };
-  } catch (e: any) {
-    result = { status: 0, ok: false, error: e.message };
   }
 
   try {
