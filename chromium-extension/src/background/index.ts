@@ -502,8 +502,19 @@ async function sessionBridgeTick(): Promise<boolean> {
 
   const mergedHeaders: Record<string, string> = {
     "content-type": "application/json",
+    accept: "*/*",
     ...headers
   };
+
+  // Linear-specific: real Linear client sends these
+  if (typeof url === "string" && url.includes("client-api.linear.app")) {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    mergedHeaders["x-linear-timezone"] = tz;
+    // Real Linear client also sends these; harmless when unrecognized
+    if (!mergedHeaders["accept-language"]) {
+      mergedHeaders["accept-language"] = navigator.language || "en-US";
+    }
+  }
 
   let result: any = null;
   let via = "none";
