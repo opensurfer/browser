@@ -447,7 +447,7 @@ async function proxyViaTab(
   const tab = tabs.find((t) => t.active) || tabs[0];
   if (!tab.id) return null;
 
-  const injected = await chrome.scripting.executeScript({
+  const injected = await (chrome.scripting.executeScript as any)({
     target: { tabId: tab.id },
     world: "ISOLATED",
     func: async (r: {
