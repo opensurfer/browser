@@ -11,3 +11,13 @@ window.addEventListener("__opensurfer_trace", (e: Event) => {
     // extension context invalidated
   }
 });
+
+window.addEventListener("__opensurfer_observed", (e: Event) => {
+  const detail = (e as CustomEvent).detail;
+  if (!detail) return;
+  try {
+    chrome.runtime.sendMessage({ type: "os_observed_request", data: detail });
+  } catch {
+    // extension context invalidated
+  }
+});

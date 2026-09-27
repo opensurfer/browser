@@ -486,6 +486,69 @@ async function proxyViaTab(
   return injected?.[0]?.result ?? null;
 }
 
+// ── observation store ────────────────────────────────────────────────────────
+// Rolling cache of headers seen on real page requests, keyed by target host.
+// Populated by content scripts' fetch/XHR hooks. When our session bridge fires
+// a request, we merge the most recent observed headers as a baseline so the
+// request looks like something the app itself would send — no per-app coding.
+type Observation = {
+  host: string;
+  pageOrigin: string;
+  method: string;
+  url: string;
+  headers: Record<string, string>;
+  observedAt: number;
+};
+const observationsByHost = new Map<string, Observation[]>();
+const OBS_MAX_PER_HOST = 8;
+
+// Headers we NEVER want to carry over from an observation — they belong to the
+// original request or are managed by the browser.
+const NON_TRANSFERRABLE = new Set([
+  "content-length",
+  "content-type",
+  "cookie",
+  "host",
+  "origin",
+  "referer",
+  "connection",
+  "user-agent",
+  "accept-encoding",
+  "sec-fetch-mode",
+  "sec-fetch-site",
+  "sec-fetch-dest",
+  "sec-ch-ua",
+  "sec-ch-ua-mobile",
+  "sec-ch-ua-platform",
+  ":authority",
+  ":method",
+  ":path",
+  ":scheme"
+]);
+
+function recordObservation(o: Observation) {
+  const list = observationsByHost.get(o.host) || [];
+  list.push(o);
+  while (list.length > OBS_MAX_PER_HOST) list.shift();
+  observationsByHost.set(o.host, list);
+}
+
+function pickObservationHeaders(host: string): Record<string, string> {
+  const list = observationsByHost.get(host) || [];
+  if (list.length === 0) return {};
+  // Prefer the most recent one
+  const latest = list[list.length - 1];
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(latest.headers)) {
+    const key = k.toLowerCase();
+    if (NON_TRANSFERRABLE.has(key)) continue;
+    if (key.startsWith("access-control-")) continue;
+    if (!key || !v) continue;
+    out[key] = v;
+  }
+  return out;
+}
+
 async function sessionBridgeTick(): Promise<boolean> {
   let job: any;
   try {
@@ -500,8 +563,16 @@ async function sessionBridgeTick(): Promise<boolean> {
   const req = job.req ?? {};
   const { method = "GET", url, headers = {}, body } = req;
 
+  let targetHost = "";
+  try {
+    targetHost = new URL(url).host;
+  } catch {}
+
+  // Observed headers from real page traffic → workflow headers → defaults
+  const observedHeaders = targetHost ? pickObservationHeaders(targetHost) : {};
   const mergedHeaders: Record<string, string> = {
     "content-type": "application/json",
+    ...observedHeaders,
     ...headers
   };
 
@@ -548,7 +619,15 @@ async function sessionBridgeTick(): Promise<boolean> {
     }
   }
   result._via = via;
-  console.log("[sessionBridge] result via", via, "status", result.status);
+  result._obsHeadersUsed = Object.keys(observedHeaders).length;
+  console.log(
+    "[sessionBridge] result via",
+    via,
+    "status",
+    result.status,
+    "obsHeaders",
+    result._obsHeadersUsed
+  );
 
   try {
     await fetch(`http://localhost:4173/api/session-result/${id}`, {
@@ -601,6 +680,22 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   const requestId = request.requestId;
   const type = request.type;
   const data = request.data;
+
+  // Record observations of real page requests so the session bridge can
+  // mirror the headers apps expect (CSRF, x-*-timezone, apollo client name…).
+  if (type === "os_observed_request" && data) {
+    try {
+      recordObservation({
+        host: data.host,
+        pageOrigin: data.pageOrigin,
+        method: data.method,
+        url: data.url,
+        headers: data.headers || {},
+        observedAt: data.observedAt || Date.now()
+      });
+    } catch {}
+    return;
+  }
 
   const handler = eventHandlers[type];
   if (!handler) {
