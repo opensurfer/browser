@@ -397,22 +397,36 @@ async function handleOsTrace(_requestId: string, data: any): Promise<void> {
 // ── session bridge ────────────────────────────────────────────────────────────
 // Polls the opensurfer server for queued capability runs, executes them in the
 // extension's context (which carries the user's cookies/auth), returns results.
-async function sessionBridgeTick(): Promise<void> {
+async function sessionBridgeTick(): Promise<boolean> {
   let job: any;
   try {
     const res = await fetch("http://localhost:4173/api/session-queue");
     job = await res.json();
   } catch {
-    return; // server not running
+    return false;
   }
-  if (!job?.id) return;
+  if (!job?.id) return false;
 
-  const { id, method = "GET", url, headers = {}, body } = job.req ?? job;
+  const id = job.id;
+  const req = job.req ?? {};
+  const { method = "GET", url, headers = {}, body } = req;
+
+  // Linear (client-api.linear.app) needs referer/origin from the Linear app
+  const extraHeaders: Record<string, string> = {};
+  if (typeof url === "string" && url.includes("client-api.linear.app")) {
+    extraHeaders["referer"] = "https://linear.app/";
+    extraHeaders["origin"] = "https://linear.app";
+  }
+
   let result: any;
   try {
     const response = await fetch(url, {
       method,
-      headers: { "content-type": "application/json", ...headers },
+      headers: {
+        "content-type": "application/json",
+        ...headers,
+        ...extraHeaders
+      },
       body: body ?? undefined,
       credentials: "include"
     });
@@ -437,10 +451,29 @@ async function sessionBridgeTick(): Promise<void> {
   } catch {
     // server went away
   }
+  return true;
+}
+
+async function drainSessionQueue(): Promise<void> {
+  // Drain up to 20 jobs per wake-up
+  for (let i = 0; i < 20; i++) {
+    const hadJob = await sessionBridgeTick();
+    if (!hadJob) break;
+  }
 }
 
 function startSessionBridge(): void {
+  // Keep the setInterval for when the service worker is alive
   setInterval(sessionBridgeTick, 2000);
+  // chrome.alarms survives service worker sleep — minimum period is 30s
+  if (chrome.alarms) {
+    chrome.alarms.create("sessionBridge", { periodInMinutes: 0.5 });
+    chrome.alarms.onAlarm.addListener((alarm) => {
+      if (alarm.name === "sessionBridge") drainSessionQueue();
+    });
+  }
+  // Drain immediately on startup in case anything was queued while asleep
+  drainSessionQueue();
 }
 
 const eventHandlers: Record<
