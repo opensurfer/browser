@@ -503,6 +503,41 @@ type Observation = {
 };
 const observationsByHost = new Map<string, Observation[]>();
 const OBS_MAX_PER_HOST = 8;
+const OBS_STORAGE_KEY = "opensurferObservations_v1";
+
+// Load persisted observations on service-worker startup — MV3 workers die
+// after ~30s idle and the in-memory Map is wiped otherwise.
+(async () => {
+  try {
+    const stored = await chrome.storage.local.get(OBS_STORAGE_KEY);
+    const raw = stored?.[OBS_STORAGE_KEY];
+    if (raw && typeof raw === "object") {
+      for (const [host, list] of Object.entries(raw)) {
+        if (Array.isArray(list))
+          observationsByHost.set(host, list as Observation[]);
+      }
+      console.log(
+        "[observations] loaded",
+        observationsByHost.size,
+        "hosts from storage"
+      );
+    }
+  } catch (e) {
+    console.warn("[observations] load failed:", e);
+  }
+})();
+
+let persistDebounce: any = null;
+function persistObservations(): void {
+  clearTimeout(persistDebounce);
+  persistDebounce = setTimeout(() => {
+    const obj: Record<string, Observation[]> = {};
+    for (const [host, list] of observationsByHost.entries()) obj[host] = list;
+    try {
+      chrome.storage.local.set({ [OBS_STORAGE_KEY]: obj }).catch(() => {});
+    } catch {}
+  }, 500);
+}
 
 // Headers we NEVER want to carry over from an observation — they belong to the
 // original request or are managed by the browser.
@@ -533,6 +568,7 @@ function recordObservation(o: Observation) {
   list.push(o);
   while (list.length > OBS_MAX_PER_HOST) list.shift();
   observationsByHost.set(o.host, list);
+  persistObservations();
 }
 
 function pickObservationHeaders(host: string): Record<string, string> {
