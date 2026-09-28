@@ -449,7 +449,7 @@ async function proxyViaTab(
 
   const injected = await (chrome.scripting.executeScript as any)({
     target: { tabId: tab.id },
-    world: "ISOLATED",
+    world: "MAIN",
     func: async (r: {
       url: string;
       method: string;
@@ -458,6 +458,7 @@ async function proxyViaTab(
     }) => {
       try {
         const bodyLen = typeof r.body === "string" ? r.body.length : 0;
+        const originAtSend = location.origin;
         const resp = await fetch(r.url, {
           method: r.method,
           headers: r.headers,
@@ -475,7 +476,8 @@ async function proxyViaTab(
           status: resp.status,
           ok: resp.ok,
           body: parsed,
-          _sentBodyLen: bodyLen
+          _sentBodyLen: bodyLen,
+          _pageOrigin: originAtSend
         };
       } catch (e: any) {
         return { status: 0, ok: false, error: String(e?.message ?? e) };
