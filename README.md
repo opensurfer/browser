@@ -1,6 +1,6 @@
 # OpenSurfer Browser
 
-A Chromium-based browser that learns what software can do by watching you use it — then lets AI operate any app you've connected, compose cross-app workflows, and chat with full awareness of your software stack. Runs headless automations across your logged-in apps.
+A Chromium-based browser that learns what software can do by watching you use it — then lets AI operate any app you've connected, compose cross-app workflows, and chat with full awareness of your software stack. Runs headless automations across every app you're signed into.
 
 Built on [OpenBrowser](https://github.com/OpenBrowserAI/openbrowser). Powered by [opensurfer](https://github.com/opensurfer/opensurfer).
 
