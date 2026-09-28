@@ -620,6 +620,7 @@ async function sessionBridgeTick(): Promise<boolean> {
   }
   result._via = via;
   result._obsHeadersUsed = Object.keys(observedHeaders).length;
+  result._obsHeaderNames = Object.keys(observedHeaders);
   console.log(
     "[sessionBridge] result via",
     via,
