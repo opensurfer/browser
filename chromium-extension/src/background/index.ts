@@ -577,13 +577,14 @@ async function sessionBridgeTick(): Promise<boolean> {
   // reject the request body with "POST body missing".
   const observedHeaders = targetHost ? pickObservationHeaders(targetHost) : {};
   const mergedHeaders: Record<string, string> = {};
-  const setHeader = (k: string, v: string) => {
+  const setHeader = (k: string, v: unknown) => {
     if (!k || v == null) return;
     mergedHeaders[k.toLowerCase()] = String(v);
   };
   setHeader("content-type", "application/json");
   for (const [k, v] of Object.entries(observedHeaders)) setHeader(k, v);
-  for (const [k, v] of Object.entries(headers)) setHeader(k, v);
+  for (const [k, v] of Object.entries(headers as Record<string, unknown>))
+    setHeader(k, v);
 
   let result: any = null;
   let via = "none";
