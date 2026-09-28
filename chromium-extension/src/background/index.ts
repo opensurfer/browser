@@ -570,13 +570,20 @@ async function sessionBridgeTick(): Promise<boolean> {
     targetHost = new URL(url).host;
   } catch {}
 
-  // Observed headers from real page traffic → workflow headers → defaults
+  // Observed headers from real page traffic → workflow headers → defaults.
+  // Normalize ALL keys to lowercase — a duplicate like both "content-type"
+  // and "Content-Type" makes Chrome send the value twice, which some servers
+  // (Linear's client-api included) treat as an invalid Content-Type and
+  // reject the request body with "POST body missing".
   const observedHeaders = targetHost ? pickObservationHeaders(targetHost) : {};
-  const mergedHeaders: Record<string, string> = {
-    "content-type": "application/json",
-    ...observedHeaders,
-    ...headers
+  const mergedHeaders: Record<string, string> = {};
+  const setHeader = (k: string, v: string) => {
+    if (!k || v == null) return;
+    mergedHeaders[k.toLowerCase()] = String(v);
   };
+  setHeader("content-type", "application/json");
+  for (const [k, v] of Object.entries(observedHeaders)) setHeader(k, v);
+  for (const [k, v] of Object.entries(headers)) setHeader(k, v);
 
   let result: any = null;
   let via = "none";
