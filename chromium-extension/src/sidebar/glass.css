@@ -1,0 +1,295 @@
+/* ============================================================
+   OpenSurfer — Mac glass shell
+   Original design in the macOS Big Sur+ frosted-panel style:
+   translucent surfaces, backdrop blur, hairline borders, inner
+   highlight. Kept as CSS tokens so palette can be re-skinned.
+   ============================================================ */
+
+:root {
+  /* Palette values taken from Catppuccin Macchiato — MIT-licensed public
+     color scheme. Only the raw hex values are borrowed; token names,
+     structure, and semantics below are original. */
+  --ctp-base: #24273a;
+  --ctp-mantle: #1e2030;
+  --ctp-crust: #181926;
+  --ctp-surface0: #363a4f;
+  --ctp-surface1: #494d64;
+  --ctp-overlay0: #6e738d;
+  --ctp-text: #cad3f5;
+  --ctp-subtext1: #b8c0e0;
+  --ctp-subtext0: #a5adcb;
+  --ctp-mauve: #c6a0f6;
+  --ctp-blue: #8aadf4;
+
+  --gl-bg-page: var(--ctp-base);
+  --gl-bg-page-2: var(--ctp-mantle);
+
+  --gl-surface: color-mix(in srgb, var(--ctp-surface0) 74%, transparent);
+  --gl-surface-hi: color-mix(in srgb, var(--ctp-surface1) 82%, transparent);
+  --gl-surface-lo: color-mix(in srgb, var(--ctp-crust) 68%, transparent);
+  --gl-hairline: color-mix(in srgb, var(--ctp-overlay0) 32%, transparent);
+  --gl-hairline-strong: color-mix(
+    in srgb,
+    var(--ctp-overlay0) 55%,
+    transparent
+  );
+  --gl-highlight: rgba(255, 255, 255, 0.06);
+
+  --gl-text: var(--ctp-text);
+  --gl-text-dim: var(--ctp-subtext1);
+  --gl-text-mute: var(--ctp-subtext0);
+
+  --gl-accent: var(--ctp-mauve);
+  --gl-accent-soft: color-mix(in srgb, var(--ctp-mauve) 18%, transparent);
+
+  --gl-blur: 22px;
+  --gl-blur-strong: 36px;
+  --gl-radius: 0.625rem;
+  --gl-radius-lg: 0.875rem;
+
+  --gl-shadow-sheet: 0 0.5px 0 0 rgba(255, 255, 255, 0.06) inset,
+    0 1px 0 0 rgba(0, 0, 0, 0.35), 0 22px 44px -18px rgba(0, 0, 0, 0.55);
+
+  --gl-font: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont,
+    "SF Pro Text", "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
+}
+
+/* Light — Catppuccin Latte. */
+@media (prefers-color-scheme: light) {
+  :root:not(.dark) {
+    --ctp-base: #eff1f5;
+    --ctp-mantle: #e6e9ef;
+    --ctp-crust: #dce0e8;
+    --ctp-surface0: #ccd0da;
+    --ctp-surface1: #bcc0cc;
+    --ctp-overlay0: #9ca0b0;
+    --ctp-text: #4c4f69;
+    --ctp-subtext1: #5c5f77;
+    --ctp-subtext0: #6c6f85;
+    --ctp-mauve: #8839ef;
+    --ctp-blue: #1e66f5;
+
+    --gl-surface: color-mix(in srgb, #ffffff 78%, transparent);
+    --gl-surface-hi: color-mix(in srgb, #ffffff 92%, transparent);
+    --gl-surface-lo: color-mix(in srgb, #ffffff 56%, transparent);
+    --gl-hairline: color-mix(in srgb, var(--ctp-overlay0) 28%, transparent);
+    --gl-hairline-strong: color-mix(
+      in srgb,
+      var(--ctp-overlay0) 50%,
+      transparent
+    );
+    --gl-highlight: rgba(255, 255, 255, 0.75);
+
+    --gl-shadow-sheet: 0 0.5px 0 0 rgba(255, 255, 255, 0.9) inset,
+      0 1px 0 0 rgba(15, 20, 30, 0.05), 0 20px 40px -18px rgba(15, 20, 30, 0.18);
+  }
+}
+
+/* Base — the page is the "wallpaper" that shows through the glass. */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: radial-gradient(
+      1200px 800px at 20% -10%,
+      rgba(122, 168, 255, 0.14) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 600px at 110% 110%,
+      rgba(220, 130, 255, 0.1) 0%,
+      transparent 55%
+    ),
+    linear-gradient(180deg, var(--gl-bg-page) 0%, var(--gl-bg-page-2) 100%);
+  color: var(--gl-text);
+  font-family: var(--gl-font);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* App shell — a single frosted sheet that hosts the whole sidebar. */
+.os-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--gl-surface);
+  backdrop-filter: blur(var(--gl-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--gl-blur)) saturate(180%);
+  color: var(--gl-text);
+}
+
+/* Titlebar — the top strip that carries the app name + tab strip. */
+.os-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--gl-hairline);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: linear-gradient(
+    180deg,
+    var(--gl-surface-hi) 0%,
+    var(--gl-surface) 100%
+  );
+  backdrop-filter: blur(var(--gl-blur-strong)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--gl-blur-strong)) saturate(180%);
+}
+
+.os-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--gl-text);
+}
+.os-brand-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--gl-accent);
+  box-shadow: 0 0 0 3px var(--gl-accent-soft);
+}
+
+/* Segmented tab control — macOS style pill row */
+.os-tabs {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  gap: 2px;
+  background: var(--gl-surface-lo);
+  border: 1px solid var(--gl-hairline);
+  border-radius: 999px;
+  box-shadow: 0 0.5px 0 0 var(--gl-highlight) inset;
+}
+.os-tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gl-text-dim);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+.os-tab:hover {
+  color: var(--gl-text);
+}
+.os-tab[data-active="true"] {
+  background: var(--gl-surface-hi);
+  color: var(--gl-text);
+  box-shadow: 0 0.5px 0 0 var(--gl-highlight) inset,
+    0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+.os-titlebar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Toolbar icon button — small, glassy hover */
+.os-icon-btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  color: var(--gl-text-dim);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.os-icon-btn:hover {
+  background: var(--gl-highlight);
+  color: var(--gl-text);
+}
+
+/* Body area — scrollable, transparent, so the shell glass shows through. */
+.os-body {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 14px 12px 18px;
+  background: transparent;
+}
+
+/* Card — the reusable frosted panel used for messages/rows */
+.os-card {
+  background: var(--gl-surface);
+  border: 1px solid var(--gl-hairline);
+  border-radius: var(--gl-radius);
+  box-shadow: var(--gl-shadow-sheet);
+  backdrop-filter: blur(var(--gl-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--gl-blur)) saturate(180%);
+}
+
+/* Empty-state watermark — the logo, ghosted */
+.os-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--gl-text-mute);
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+/* Footer composer container */
+.os-composer {
+  padding: 8px 10px 12px;
+  border-top: 1px solid var(--gl-hairline);
+  background: linear-gradient(
+    0deg,
+    var(--gl-surface-hi) 0%,
+    var(--gl-surface) 100%
+  );
+  backdrop-filter: blur(var(--gl-blur-strong)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--gl-blur-strong)) saturate(180%);
+}
+
+/* Scrollbars — thin, unobtrusive */
+.os-body::-webkit-scrollbar,
+.os-shell *::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.os-body::-webkit-scrollbar-thumb,
+.os-shell *::-webkit-scrollbar-thumb {
+  background: rgba(180, 186, 196, 0.28);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.os-body::-webkit-scrollbar-thumb:hover,
+.os-shell *::-webkit-scrollbar-thumb:hover {
+  background: rgba(180, 186, 196, 0.5);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+.os-body::-webkit-scrollbar-track,
+.os-shell *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Ant Design tweaks so its buttons inherit the glass look */
+.os-shell .ant-btn.ant-btn-text {
+  color: var(--gl-text-dim);
+}
+.os-shell .ant-btn.ant-btn-text:hover {
+  background: var(--gl-highlight);
+  color: var(--gl-text);
+}

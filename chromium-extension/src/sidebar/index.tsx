@@ -11,7 +11,7 @@ import type { ChatMessage, UploadedFile } from "./types";
 import { useChatCallbacks } from "./hooks/useChatCallbacks";
 import { useSessionManagement } from "./hooks/useSessionManagement";
 import { ThemeProvider } from "./providers/ThemeProvider";
-import { message as AntdMessage, Button, Space } from "antd";
+import { message as AntdMessage } from "antd";
 import { HistoryOutlined, SettingOutlined } from "@ant-design/icons";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 
@@ -307,118 +307,113 @@ const AppRun = () => {
   }, [handleNewSession]);
 
   return (
-    <div className="flex flex-col h-screen bg-white">
-      {/* Header: tabs + action buttons */}
-      <div className="flex items-center px-1 py-1 bg-gray-100 border-b border-gray-200">
-        {/* Tab switcher */}
-        <div className="flex items-center gap-0.5 flex-1">
+    <div className="os-shell">
+      {/* Titlebar — brand, segmented tabs, action icons */}
+      <div className="os-titlebar">
+        <div className="os-brand">
+          <span className="os-brand-dot" aria-hidden />
+          <span>OpenSurfer</span>
+        </div>
+        <div className="os-tabs" role="tablist">
           {(["chat", "capabilities", "workflows"] as Tab[]).map((tab) => (
             <button
               key={tab}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab}
+              data-active={activeTab === tab}
               onClick={() => setActiveTab(tab)}
-              className={[
-                "px-3 py-1 rounded text-xs font-medium capitalize transition-colors",
-                activeTab === tab
-                  ? "bg-white text-gray-800 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-200"
-              ].join(" ")}
+              className="os-tab"
             >
-              {tab}
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
         </div>
-        {/* Action buttons — only shown on chat tab */}
         {activeTab === "chat" && (
-          <Space size={4}>
-            <Button
-              type="text"
-              icon={<HistoryOutlined />}
+          <div className="os-titlebar-actions">
+            <button
+              type="button"
+              className="os-icon-btn"
+              aria-label="Session history"
               onClick={handleShowSessionHistory}
-              className="text-gray-500 hover:text-gray-700"
-            />
-            <Button
-              type="text"
-              icon={<SettingOutlined />}
+            >
+              <HistoryOutlined />
+            </button>
+            <button
+              type="button"
+              className="os-icon-btn"
+              aria-label="Settings"
               onClick={() => chrome.runtime.openOptionsPage()}
-              className="text-gray-500 hover:text-gray-700"
-            />
-          </Space>
+            >
+              <SettingOutlined />
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Capabilities tab */}
       {activeTab === "capabilities" && (
-        <div
-          className="flex-1 overflow-hidden"
-          style={{ background: "var(--chrome-bg-secondary)" }}
-        >
+        <div className="os-body">
           <CapabilitiesTab />
         </div>
       )}
 
-      {/* Workflows tab */}
       {activeTab === "workflows" && (
-        <div
-          className="flex-1 overflow-hidden"
-          style={{ background: "var(--chrome-bg-secondary)" }}
-        >
+        <div className="os-body">
           <WorkflowsTab />
         </div>
       )}
 
-      {/* Message area — hidden when capabilities tab active */}
-      <div
-        ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden p-4 bg-gray-100 relative"
-        style={{ display: activeTab === "chat" ? undefined : "none" }}
-      >
-        {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div
-              className="w-48 h-48"
-              style={{
-                maskImage: "url(/icon_light.png)",
-                WebkitMaskImage: "url(/icon_light.png)",
-                maskSize: "contain",
-                WebkitMaskSize: "contain",
-                maskRepeat: "no-repeat",
-                WebkitMaskRepeat: "no-repeat",
-                maskPosition: "center",
-                WebkitMaskPosition: "center",
-                backgroundColor: "var(--chrome-icon-color)",
-                opacity: 0.15
-              }}
-            />
-          </div>
-        ) : (
-          messages.map((message) => (
-            <MessageItem
-              key={message.id}
-              message={message}
-              onUpdateMessage={forceUpdate}
-            />
-          ))
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input area — chat tab only */}
       {activeTab === "chat" && (
-        <ChatInput
-          inputValue={inputValue}
-          onInputChange={setInputValue}
-          onSend={sendMessage}
-          onStop={handleStop}
-          onFileSelect={handleFileSelect}
-          onRemoveFile={removeFile}
-          uploadedFiles={uploadedFiles}
-          sending={sending}
-          currentMessageId={currentMessageId}
-          onNewSession={handleNewSession}
-        />
+        <div ref={messagesContainerRef} className="os-body">
+          {messages.length === 0 ? (
+            <div className="os-empty">
+              <div
+                style={{
+                  width: 120,
+                  height: 120,
+                  maskImage: "url(/icon_light.png)",
+                  WebkitMaskImage: "url(/icon_light.png)",
+                  maskSize: "contain",
+                  WebkitMaskSize: "contain",
+                  maskRepeat: "no-repeat",
+                  WebkitMaskRepeat: "no-repeat",
+                  maskPosition: "center",
+                  WebkitMaskPosition: "center",
+                  backgroundColor: "var(--gl-text-mute)",
+                  opacity: 0.28
+                }}
+              />
+            </div>
+          ) : (
+            messages.map((message) => (
+              <MessageItem
+                key={message.id}
+                message={message}
+                onUpdateMessage={forceUpdate}
+              />
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </div>
       )}
 
-      {/* Session History Modal */}
+      {activeTab === "chat" && (
+        <div className="os-composer">
+          <ChatInput
+            inputValue={inputValue}
+            onInputChange={setInputValue}
+            onSend={sendMessage}
+            onStop={handleStop}
+            onFileSelect={handleFileSelect}
+            onRemoveFile={removeFile}
+            uploadedFiles={uploadedFiles}
+            sending={sending}
+            currentMessageId={currentMessageId}
+            onNewSession={handleNewSession}
+          />
+        </div>
+      )}
+
       <SessionHistory
         visible={showSessionHistory}
         onClose={() => setShowSessionHistory(false)}
