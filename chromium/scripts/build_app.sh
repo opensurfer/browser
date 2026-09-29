@@ -87,15 +87,25 @@ if ! xcode-select -p >/dev/null 2>&1; then
 fi
 ok "git, python3, Xcode CLT present"
 
-# depot_tools
+# depot_tools (full clone — a shallow clone breaks self-update)
 if [ ! -d "$DEPOT_TOOLS_DIR" ]; then
   warn "depot_tools not found — cloning into $DEPOT_TOOLS_DIR"
-  git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git "$DEPOT_TOOLS_DIR"
+  git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git "$DEPOT_TOOLS_DIR"
 else
   ok "depot_tools present"
 fi
 export PATH="$DEPOT_TOOLS_DIR:$PATH"
 export DEPOT_TOOLS_UPDATE=1
+
+# Bootstrap: fetch/gclient need depot_tools' bundled toolchain on disk before
+# first use, otherwise fetch dies with "python3_bin_reldir.txt not found".
+if [ ! -f "$DEPOT_TOOLS_DIR/python3_bin_reldir.txt" ]; then
+  warn "bootstrapping depot_tools (first run) …"
+  gclient --version >/dev/null 2>&1 || true
+fi
+[ -f "$DEPOT_TOOLS_DIR/python3_bin_reldir.txt" ] \
+  && ok "depot_tools bootstrapped" \
+  || warn "depot_tools bootstrap incomplete — fetch will retry it"
 
 # ============================================================================
 # Phase 1 — build the sidebar extension (carries the Buzz theme)
