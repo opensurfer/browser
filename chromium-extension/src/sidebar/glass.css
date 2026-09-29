@@ -92,23 +92,32 @@ body,
   height: 100%;
   margin: 0;
 }
+:root {
+  /* Warm-dark app "wallpaper" — olive top blending into deep navy. */
+  --gl-wall-top: #4a4616;
+  --gl-wall-bottom: #0a1423;
+}
+@media (prefers-color-scheme: light) {
+  :root:not(.dark) {
+    --gl-wall-top: #e6e6b6;
+    --gl-wall-bottom: #c4d0da;
+  }
+}
+
 body {
-  background: radial-gradient(
-      1200px 800px at 20% -10%,
-      rgba(122, 168, 255, 0.14) 0%,
-      transparent 60%
+  background: linear-gradient(
+      180deg,
+      var(--gl-wall-top) 0%,
+      var(--gl-wall-bottom) 55%
     ),
-    radial-gradient(
-      900px 600px at 110% 110%,
-      rgba(220, 130, 255, 0.1) 0%,
-      transparent 55%
-    ),
-    linear-gradient(180deg, var(--gl-bg-page) 0%, var(--gl-bg-page-2) 100%);
+    var(--gl-bg-page-2);
   color: var(--gl-text);
   font-family: var(--gl-font);
   font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 /* App shell — a single frosted sheet that hosts the whole sidebar. */
@@ -158,38 +167,40 @@ body {
   box-shadow: 0 0 0 3px var(--gl-accent-soft);
 }
 
-/* Segmented tab control — macOS style pill row */
+/* Tab row — flat labels with translucent hover/active surfaces. */
 .os-tabs {
   display: inline-flex;
   align-items: center;
-  padding: 3px;
   gap: 2px;
-  background: var(--gl-surface-lo);
-  border: 1px solid var(--gl-hairline);
-  border-radius: 999px;
-  box-shadow: 0 0.5px 0 0 var(--gl-highlight) inset;
 }
 .os-tab {
   appearance: none;
   border: 0;
   background: transparent;
-  padding: 5px 12px;
-  border-radius: 999px;
+  padding: 4px 10px;
+  border-radius: calc(var(--gl-radius) - 4px);
   font: inherit;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--gl-text-dim);
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+  transition: background 120ms ease, color 120ms ease;
 }
 .os-tab:hover {
   color: var(--gl-text);
+  background: rgba(255, 255, 255, 0.06);
 }
 .os-tab[data-active="true"] {
-  background: var(--gl-surface-hi);
   color: var(--gl-text);
-  box-shadow: 0 0.5px 0 0 var(--gl-highlight) inset,
-    0 1px 2px rgba(0, 0, 0, 0.24);
+  background: rgba(255, 255, 255, 0.12);
+}
+@media (prefers-color-scheme: light) {
+  :root:not(.dark) .os-tab:hover {
+    background: rgba(15, 20, 30, 0.05);
+  }
+  :root:not(.dark) .os-tab[data-active="true"] {
+    background: rgba(15, 20, 30, 0.09);
+  }
 }
 
 .os-titlebar-actions {
