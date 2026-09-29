@@ -6,53 +6,82 @@
    ============================================================ */
 
 :root {
-  /* Glass palette (dark) — near-black glass with cool tint */
-  --gl-bg-page: #17181c;
-  --gl-bg-page-2: #101115;
-  --gl-surface: rgba(38, 40, 46, 0.72);
-  --gl-surface-hi: rgba(56, 58, 66, 0.86);
-  --gl-surface-lo: rgba(24, 25, 30, 0.72);
-  --gl-hairline: rgba(255, 255, 255, 0.08);
-  --gl-hairline-strong: rgba(255, 255, 255, 0.14);
+  /* Palette values taken from Catppuccin Macchiato — MIT-licensed public
+     color scheme. Only the raw hex values are borrowed; token names,
+     structure, and semantics below are original. */
+  --ctp-base: #24273a;
+  --ctp-mantle: #1e2030;
+  --ctp-crust: #181926;
+  --ctp-surface0: #363a4f;
+  --ctp-surface1: #494d64;
+  --ctp-overlay0: #6e738d;
+  --ctp-text: #cad3f5;
+  --ctp-subtext1: #b8c0e0;
+  --ctp-subtext0: #a5adcb;
+  --ctp-mauve: #c6a0f6;
+  --ctp-blue: #8aadf4;
+
+  --gl-bg-page: var(--ctp-base);
+  --gl-bg-page-2: var(--ctp-mantle);
+
+  --gl-surface: color-mix(in srgb, var(--ctp-surface0) 74%, transparent);
+  --gl-surface-hi: color-mix(in srgb, var(--ctp-surface1) 82%, transparent);
+  --gl-surface-lo: color-mix(in srgb, var(--ctp-crust) 68%, transparent);
+  --gl-hairline: color-mix(in srgb, var(--ctp-overlay0) 32%, transparent);
+  --gl-hairline-strong: color-mix(
+    in srgb,
+    var(--ctp-overlay0) 55%,
+    transparent
+  );
   --gl-highlight: rgba(255, 255, 255, 0.06);
 
-  --gl-text: rgba(240, 242, 248, 0.94);
-  --gl-text-dim: rgba(180, 186, 196, 0.7);
-  --gl-text-mute: rgba(150, 156, 168, 0.55);
+  --gl-text: var(--ctp-text);
+  --gl-text-dim: var(--ctp-subtext1);
+  --gl-text-mute: var(--ctp-subtext0);
 
-  --gl-accent: #7aa8ff;
-  --gl-accent-soft: rgba(122, 168, 255, 0.16);
+  --gl-accent: var(--ctp-mauve);
+  --gl-accent-soft: color-mix(in srgb, var(--ctp-mauve) 18%, transparent);
 
   --gl-blur: 22px;
   --gl-blur-strong: 36px;
-  --gl-radius: 10px;
-  --gl-radius-lg: 14px;
+  --gl-radius: 0.625rem;
+  --gl-radius-lg: 0.875rem;
 
   --gl-shadow-sheet: 0 0.5px 0 0 rgba(255, 255, 255, 0.06) inset,
     0 1px 0 0 rgba(0, 0, 0, 0.35), 0 22px 44px -18px rgba(0, 0, 0, 0.55);
 
-  --gl-font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text",
-    "Segoe UI", "Helvetica Neue", sans-serif;
+  --gl-font: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont,
+    "SF Pro Text", "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
 }
 
-/* Light-mode palette — off-white glass */
+/* Light — Catppuccin Latte. */
 @media (prefers-color-scheme: light) {
   :root:not(.dark) {
-    --gl-bg-page: #eef0f4;
-    --gl-bg-page-2: #dee2ea;
-    --gl-surface: rgba(255, 255, 255, 0.72);
-    --gl-surface-hi: rgba(255, 255, 255, 0.9);
-    --gl-surface-lo: rgba(255, 255, 255, 0.55);
-    --gl-hairline: rgba(15, 20, 30, 0.08);
-    --gl-hairline-strong: rgba(15, 20, 30, 0.14);
-    --gl-highlight: rgba(255, 255, 255, 0.7);
+    --ctp-base: #eff1f5;
+    --ctp-mantle: #e6e9ef;
+    --ctp-crust: #dce0e8;
+    --ctp-surface0: #ccd0da;
+    --ctp-surface1: #bcc0cc;
+    --ctp-overlay0: #9ca0b0;
+    --ctp-text: #4c4f69;
+    --ctp-subtext1: #5c5f77;
+    --ctp-subtext0: #6c6f85;
+    --ctp-mauve: #8839ef;
+    --ctp-blue: #1e66f5;
 
-    --gl-text: #0f141c;
-    --gl-text-dim: #4a5262;
-    --gl-text-mute: #78808f;
+    --gl-surface: color-mix(in srgb, #ffffff 78%, transparent);
+    --gl-surface-hi: color-mix(in srgb, #ffffff 92%, transparent);
+    --gl-surface-lo: color-mix(in srgb, #ffffff 56%, transparent);
+    --gl-hairline: color-mix(in srgb, var(--ctp-overlay0) 28%, transparent);
+    --gl-hairline-strong: color-mix(
+      in srgb,
+      var(--ctp-overlay0) 50%,
+      transparent
+    );
+    --gl-highlight: rgba(255, 255, 255, 0.75);
 
     --gl-shadow-sheet: 0 0.5px 0 0 rgba(255, 255, 255, 0.9) inset,
-      0 1px 0 0 rgba(0, 0, 0, 0.05), 0 20px 40px -18px rgba(15, 20, 30, 0.18);
+      0 1px 0 0 rgba(15, 20, 30, 0.05), 0 20px 40px -18px rgba(15, 20, 30, 0.18);
   }
 }
 
