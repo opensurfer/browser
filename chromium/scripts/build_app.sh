@@ -85,7 +85,24 @@ command -v python3 >/dev/null || die "python3 is required"
 if ! xcode-select -p >/dev/null 2>&1; then
   die "Xcode Command Line Tools missing — run: xcode-select --install"
 fi
-ok "git, python3, Xcode CLT present"
+# Chromium's macOS build needs FULL Xcode, not just Command Line Tools —
+# gn gen invokes xcodebuild for the SDK. Fail fast here instead of after the
+# multi-hour fetch.
+XCODE_DIR="$(xcode-select -p 2>/dev/null)"
+if ! xcodebuild -version >/dev/null 2>&1; then
+  echo -e "${c_red}✘ Full Xcode is required to build Chromium on macOS.${c_reset}"
+  echo "  Active developer dir: ${XCODE_DIR:-<none>} (Command Line Tools only)"
+  echo ""
+  echo "  Fix:"
+  echo "    1. Install Xcode from the App Store (~15GB)"
+  echo "    2. sudo xcode-select -s /Applications/Xcode.app/Contents/Developer"
+  echo "    3. sudo xcodebuild -license accept"
+  echo ""
+  echo "  Then re-run. If Chromium is already fetched:"
+  echo "    SKIP_FETCH=1 bash chromium/scripts/build_app.sh"
+  die "missing full Xcode"
+fi
+ok "git, python3, full Xcode ($(xcodebuild -version | head -1)) present"
 
 # depot_tools (full clone — a shallow clone breaks self-update)
 if [ ! -d "$DEPOT_TOOLS_DIR" ]; then
